@@ -39,7 +39,7 @@ const Landing = () => {
 
           <View style={styles.spacerContainer}>
             <View style={styles.spacer} />
-            <Text style={{ fontSize: 12 }}>veya</Text>
+            <Text style={styles.spacerText}>veya</Text>
             <View style={styles.spacer} />
           </View>
 
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "lightgray",
+    backgroundColor: "#DFE0F4",
   },
   purpleBackground: {
     flex: 1,
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   bottom: {
     flex: 1,
-    backgroundColor: "lightgray",
+    backgroundColor: "#DFE0F4",
     width: "100%",
   },
   cardContainer: {
@@ -126,18 +126,25 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   spacerContainer: {
-    margin: 8,
+    marginVertical: 16,
+    marginHorizontal: 20,
     alignItems: "center",
     justifyContent: "space-between",
     flexDirection: "row",
   },
   spacer: {
     marginTop: 4,
-    marginHorizontal: 8,
-    width: "40%",
+    width: "37%",
     height: 2,
-    backgroundColor: "#ededed",
+    backgroundColor: "#9e9e9e",
     borderRadius: 4,
+  },
+  spacerText: {
+    fontSize: 13,
+    color: "#9e9e9e",
+    fontWeight: "bold",
+    flex: 1,
+    textAlign: "center",
   },
 });
 

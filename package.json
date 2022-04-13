@@ -1,5 +1,5 @@
 {
-  "name": "LibraryApp",
+  "name": "libraryapp",
   "version": "1.0.0",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -23,8 +23,10 @@
     "react-dom": "17.0.2",
     "react-hook-form": "^7.29.0",
     "react-native": "^0.67.3",
+    "react-native-progress": "^5.0.0",
     "react-native-safe-area-context": "3.3.2",
     "react-native-screens": "~3.10.1",
+    "react-native-svg": "12.1.1",
     "react-native-web": "0.17.7",
     "react-router": "^6.2.2",
     "react-router-dom": "^6.2.2",

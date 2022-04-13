@@ -11,7 +11,6 @@ import LoginScreen from "./screens/auth/LoginScreen";
 import { NavigationContainer } from "@react-navigation/native";
 
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import Header from "./components/Header";
 
 const App = () => {
   LogBox.ignoreLogs(["Overwriting fontFamily style attribute preprocessor"]);
@@ -23,11 +22,7 @@ const App = () => {
       switch (action.type) {
         case "RESTORE_TOKEN":
           const updateTokenAsync = async (token) => {
-            if (Platform.OS === "web") {
-              localStorage.setItem("userToken", token);
-            } else {
-              await setItemAsync("userToken", token);
-            }
+            await setItemAsync("userToken", token);
           };
 
           updateTokenAsync(action.token);
@@ -42,12 +37,14 @@ const App = () => {
             ...prevState,
             isSignout: false,
             user: action.user,
+            session: action.session,
           };
         case "SIGN_OUT":
           return {
             ...prevState,
             isSignout: true,
             user: action.user,
+            session: action.session,
           };
         default:
           break;
@@ -64,11 +61,11 @@ const App = () => {
   const authContext = useMemo(
     () => ({
       signIn: async (data) => {
-        dispatch({ type: "SIGN_IN", user: data.user });
+        dispatch({ type: "SIGN_IN", user: data.user, session: data.session });
       },
       signOut: () => dispatch({ type: "SIGN_OUT" }),
       signUp: async (data) => {
-        dispatch({ type: "SIGN_IN", user: data.user });
+        dispatch({ type: "SIGN_UP", user: data.user, session: data.session });
       },
     }),
     []
@@ -95,9 +92,6 @@ const App = () => {
   return (
     <NavigationContainer>
       <AuthContext.Provider value={authContext}>
-        {/* <SafeAreaView style={styles.container}>
-          <Header />
-        </SafeAreaView> */}
         <Stack.Navigator>
           <Stack.Screen
             name="Landing"
@@ -119,12 +113,5 @@ const App = () => {
     </NavigationContainer>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 25,
-    padding: 10,
-  },
-});
 
 export default App;

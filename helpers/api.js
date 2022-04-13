@@ -4,5 +4,5 @@ export default axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  baseURL: "http://172.17.64.1/api",
+  baseURL: "http://172.29.192.1/api",
 });

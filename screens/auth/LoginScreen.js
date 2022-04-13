@@ -1,19 +1,39 @@
-import { StyleSheet, Text, View, TextInput, Image } from "react-native";
+import { useContext, useState } from "react";
+
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  Image,
+  Dimensions,
+  Platform,
+} from "react-native";
+
 import { useNavigation } from "@react-navigation/native";
 
-import logo from "../../assets/icon-64.png";
 import PrimaryButton from "../../components/PrimaryButton";
 import OutlineButton from "../../components/OutlineButton";
 import IconButton from "../../components/IconButton";
-
 import TextButton from "../../components/TextButton";
-import { Controller, useForm } from "react-hook-form";
+
+import logo from "../../assets/icon-64.png";
 
 import { default as sharedStyles } from "../../styles/Shared";
+import { Ionicons } from "@expo/vector-icons";
+import CircleSnail from "react-native-progress/CircleSnail";
+
+import { Controller, useForm } from "react-hook-form";
+
 import patterns from "../../helpers/patterns";
+import AuthContext from "../../auth/AuthContext";
+import api from "../../helpers/api";
 
 const LoginScreen = () => {
   const navigation = useNavigation();
+  const { height } = Dimensions.get("window");
+  const { signIn } = useContext(AuthContext);
+  const [apiError, setApiError] = useState("test");
 
   const {
     control,
@@ -34,29 +54,60 @@ const LoginScreen = () => {
     navigation.navigate(page);
   };
 
-  const onChange = (arg) => {
-    return {
-      value: arg.nativeEvent.text,
-    };
+  const onSubmit = (data) => {
+    api
+      .post("/user/login", {
+        username: data.username,
+        password: data.password,
+        platform: Platform.OS,
+      })
+      .then((res) => {
+        if (res.data.message === "User not found") {
+          return setApiError("Kullanıcı adı veya şifre yanlış");
+        }
+
+        if (res.data.message === "Credentials not matching our records") {
+          return setApiError("Kullanıcı adı veya şifre yanlış");
+        }
+
+        if (res.data.message === "Your account is not verified yet") {
+          return setApiError(
+            "Hesabınız henüz onaylanmamış mail adresinize gelen kod ile hesabınızı aktif edin."
+          );
+        }
+
+        if (res.data.message === "An error has been occurred") {
+          return setApiError("Bilinmeyen bir hata meydana geldi.");
+        }
+
+        if (res.data.message === "Sid token couldn't signed") {
+          return setApiError(
+            "Oturum oluşturulamadı tekrar giriş yapmayı deneyin."
+          );
+        }
+
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
-  const onSubmit = (data) => console.log(data);
-
   return (
-    <View style={styles.container}>
-      <View style={styles.purpleBackground}></View>
-      <View style={styles.bottom}></View>
-
-      <View style={styles.header}>
-        <View style={styles.backContainer}>
-          <IconButton icon="arrow-back" callback={handleGoBack} size={24} />
-        </View>
-        <View style={styles.logo}>
-          <Image style={styles.image} source={logo} />
-        </View>
+    <View style={[styles.container, { height: height }]}>
+      <View style={styles.background}>
+        <View style={styles.purpleBackground}></View>
+        <View style={styles.bottom}></View>
       </View>
 
-      <View style={styles.cardContainer}>
+      <View style={[styles.cardContainer, { height: height }]}>
+        <View style={styles.header}>
+          <IconButton icon="arrow-back" callback={handleGoBack} size={24} />
+          <View style={styles.logo}>
+            <Image style={styles.image} source={logo} />
+          </View>
+        </View>
+
         <View style={styles.cardHeader}>
           <Text style={styles.title}>Giriş Yap</Text>
           <Text style={styles.text}>
@@ -65,46 +116,111 @@ const LoginScreen = () => {
         </View>
 
         <View style={styles.card}>
-          <Controller
-            control={control}
-            rules={{
-              required: true,
-              minLength: 6,
-              maxLength: 32,
-              pattern: patterns.string,
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                onBlur={onBlur}
-                onChangeText={(value) => onChange(value)}
-                value={value}
-                style={[sharedStyles.inputWithLabel, styles.input]}
-                placeholder="Kullanıcı adı"
-              />
-            )}
-            name="username"
-          />
-          {errors.username && <Text>{errors.username?.message}</Text>}
+          {apiError && <Text style={styles.error}>{apiError}</Text>}
 
           <Controller
             control={control}
             rules={{
-              required: true,
+              required: {
+                value: true,
+                message: "Kullanıcı adı gerekli",
+              },
+              minLength: {
+                value: 6,
+                message: "6 karakterden az olamaz",
+              },
+              maxLength: {
+                value: 32,
+                message: "32 karakterden fazla olamaz",
+              },
+              pattern: {
+                value: patterns.string,
+                message: "Kullanıcı adınız geçersiz karakterler içeriyor",
+              },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                onBlur={onBlur}
-                selectionColor="gray"
-                onChangeText={(value) => onChange(value)}
-                style={[sharedStyles.inputWithLabel, styles.input]}
-                placeholder="Şifre"
-                value={value}
-                password={true}
-              />
+              <View
+                style={[sharedStyles.inputWithIconContainer, , styles.input]}
+              >
+                <Ionicons
+                  style={sharedStyles.inputWithIconIcon}
+                  name="person"
+                  size={16}
+                  color="gray"
+                />
+                <TextInput
+                  onBlur={onBlur}
+                  selectionColor="gray"
+                  onChangeText={(value) => onChange(value)}
+                  value={value}
+                  placeholder="Kullanıcı adı"
+                  style={sharedStyles.inputWithIcon}
+                />
+              </View>
+            )}
+            name="username"
+          />
+          {errors.username && (
+            <Text style={styles.fieldText}>{errors.username?.message}</Text>
+          )}
+
+          <Controller
+            control={control}
+            rules={{
+              required: {
+                value: true,
+                message: "Şifre alanı gerekli",
+              },
+              minLength: {
+                value: 6,
+                message: "Şifre en az 6 karakter olmalı",
+              },
+              maxLength: {
+                value: 255,
+                message: "Şifre en fazla 255 karakter olmalı",
+              },
+              validate: {
+                hasLowerLetter: (value) =>
+                  /[a-z]/.test(value) ||
+                  "Şifreniz en az bir küçük karakter içermelidir",
+                hasUpperLetter: (value) =>
+                  /[A-Z]/.test(value) ||
+                  "Şifreniz en az bir büyük karakter içermelidir",
+                hasNumber: (value) =>
+                  /[0-9]/.test(value) || "Şifreniz en az bir sayı içermelidir",
+                hasSpecialChar: (value) =>
+                  /[!@#$%^&*]/.test(value) ||
+                  "Şifreniz !@#$%^&* özel karakterlerinden en az birini içermelidir",
+              },
+            }}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View
+                style={[sharedStyles.inputWithIconContainer, , styles.input]}
+              >
+                <Ionicons
+                  style={sharedStyles.inputWithIconIcon}
+                  name="lock-closed"
+                  size={16}
+                  color="gray"
+                />
+                <TextInput
+                  onBlur={onBlur}
+                  selectionColor="gray"
+                  onChangeText={(value) => onChange(value)}
+                  style={sharedStyles.inputWithIcon}
+                  placeholder="Şifre"
+                  value={value}
+                  password={true}
+                />
+              </View>
             )}
             name="password"
           />
-          {errors.password && <Text>This is required.</Text>}
+          {errors.password && (
+            <Text style={styles.fieldText}>{errors.password?.message}</Text>
+          )}
+
+          <CircleSnail size={30} color={["red", "green", "blue"]} />
 
           <PrimaryButton
             style={styles.button}
@@ -112,8 +228,9 @@ const LoginScreen = () => {
           >
             Giriş Yap
           </PrimaryButton>
+          <View style={styles.takeRemaining} />
           <TextButton
-            style={styles.button}
+            style={styles.textButton}
             callback={() => handleNavigate("ForgotPassword")}
           >
             Şifreni mi unuttun?
@@ -122,11 +239,11 @@ const LoginScreen = () => {
 
         <View style={styles.spacerContainer}>
           <View style={styles.spacer} />
-          <Text style={{ fontSize: 13, color: "#a6a6a6", fontWeight: "bold" }}>
-            veya
-          </Text>
+          <Text style={styles.spacerText}>veya</Text>
           <View style={styles.spacer} />
         </View>
+
+        <View style={styles.takeRemaining} />
 
         <OutlineButton
           style={styles.whiteButton}
@@ -140,15 +257,19 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: "relative",
-    flex: 1,
+  background: {
+    position: "absolute",
+    flexDirection: "column",
     width: "100%",
     height: "100%",
+  },
+  container: {
+    flex: 1,
+    width: "100%",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "lightgray",
+    backgroundColor: "#DFE0F4",
   },
   purpleBackground: {
     flex: 0.6,
@@ -158,61 +279,51 @@ const styles = StyleSheet.create({
   },
   bottom: {
     flex: 1,
-    backgroundColor: "lightgray",
+    backgroundColor: "#DFE0F4",
     width: "100%",
   },
   cardContainer: {
-    position: "absolute",
     width: "100%",
     height: "100%",
     alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 64,
+    justifyContent: "flex-start",
+    paddingVertical: 48,
   },
   header: {
-    position: "absolute",
+    position: "relative",
     width: "90%",
-    height: "10%",
+    alignItems: "flex-start",
     flexDirection: "row",
-    top: 48,
     alignItems: "center",
-    justifyContent: "center",
-  },
-  backContainer: {
-    position: "absolute",
-    left: 0,
-    top: 12,
+    justifyContent: "space-between",
   },
   logo: {
-    position: "relative",
-    backgroundColor: "white",
-    height: "80%",
-    borderRadius: 16,
+    position: "absolute",
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 16,
   },
   image: {
-    width: 32,
-    height: 32,
+    width: 48,
+    height: 48,
+    backgroundColor: "white",
+    borderRadius: 8,
   },
   cardHeader: {
-    marginHorizontal: 16,
-    marginBottom: 48,
+    paddingBottom: 48,
     width: "85%",
     color: "white",
     textAlign: "left",
     alignItems: "flex-start",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
   },
   card: {
-    position: "relative",
     width: "90%",
-    height: "50%",
     backgroundColor: "white",
-    borderRadius: 16,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    paddingVertical: 16,
+    borderRadius: 16,
   },
   title: {
     fontWeight: "bold",
@@ -225,7 +336,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginRight: 96,
   },
+  fieldText: {
+    color: "#D93D54",
+    marginBottom: 8,
+    width: "90%",
+    textAlign: "left",
+    paddingRight: 36,
+  },
   button: {
+    width: "90%",
+    margin: 8,
+    marginBottom: 0,
+  },
+  textButton: {
     width: "90%",
     margin: 8,
     marginBottom: 0,
@@ -234,10 +357,10 @@ const styles = StyleSheet.create({
     width: "90%",
     margin: 8,
     marginBottom: 0,
-    backgroundColor: "white",
   },
   spacerContainer: {
-    margin: 8,
+    marginVertical: 16,
+    marginHorizontal: 24,
     alignItems: "center",
     justifyContent: "space-between",
     flexDirection: "row",
@@ -245,14 +368,32 @@ const styles = StyleSheet.create({
   spacer: {
     marginTop: 4,
     marginHorizontal: 8,
-    width: "40%",
+    width: "37%",
     height: 2,
-    backgroundColor: "#a6a6a6",
+    backgroundColor: "#9e9e9e",
     borderRadius: 4,
+  },
+  spacerText: {
+    fontSize: 13,
+    color: "#9e9e9e",
+    fontWeight: "bold",
+    flex: 1,
+    textAlign: "center",
+  },
+  takeRemaining: {
+    flexGrow: 1,
   },
   input: {
     width: "90%",
     margin: 4,
+  },
+  error: {
+    fontWeight: "bold",
+    fontSize: 16,
+    width: "100%",
+    color: "#D93D54",
+    paddingVertical: 8,
+    paddingHorizontal: 24,
   },
 });
 
