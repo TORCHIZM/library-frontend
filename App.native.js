@@ -19,8 +19,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { navigateWithReset } from "./helpers/navigationHelper";
 import LoadingScreen from "./screens/LoadingScreen";
-import ForgotPaswordScreen from "./screens/auth/ForgotPasswordScreen.native";
-import ForgotPasswordConfirmationScreen from "./screens/auth/ForgotPasswordConfirmationScreen.native";
+import ForgotPaswordScreen from "./screens/auth/ForgotPasswordScreen";
+import ForgotPasswordConfirmationScreen from "./screens/auth/ForgotPasswordConfirmationScreen";
 
 const App = () => {
   LogBox.ignoreLogs(["Overwriting fontFamily style attribute preprocessor"]);
