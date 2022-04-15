@@ -7,13 +7,11 @@ import {
   TextInput,
   Image,
   Dimensions,
-  Platform,
 } from "react-native";
 
 import { useNavigation } from "@react-navigation/native";
 
 import PrimaryButton from "../../components/PrimaryButton";
-import OutlineButton from "../../components/OutlineButton";
 import IconButton from "../../components/IconButton";
 import TextButton from "../../components/TextButton";
 
@@ -21,19 +19,23 @@ import logo from "../../assets/icon-64.png";
 
 import { default as sharedStyles } from "../../styles/Shared";
 import { Ionicons } from "@expo/vector-icons";
-import CircleSnail from "react-native-progress/CircleSnail";
+import Circle from "react-native-progress/Circle";
 
 import { Controller, useForm } from "react-hook-form";
 
-import patterns from "../../helpers/patterns";
 import AuthContext from "../../auth/AuthContext";
 import api from "../../helpers/api";
+import { navigateWithReset } from "../../helpers/navigationHelper";
 
-const LoginScreen = () => {
+const RegisterConfirmationScreen = ({ route }) => {
   const navigation = useNavigation();
+  const { userId, email } = route.params;
   const { height } = Dimensions.get("window");
-  const { signIn } = useContext(AuthContext);
-  const [apiError, setApiError] = useState("test");
+  const { activate, signOut } = useContext(AuthContext);
+
+  const [apiError, setApiError] = useState(undefined);
+  const [isFetching, setIsFetching] = useState(false);
+  const [didntReceiveCode, setDidntReceiveCode] = useState("Kod almadım");
 
   const {
     control,
@@ -41,8 +43,7 @@ const LoginScreen = () => {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      username: "",
-      password: "",
+      code: "",
     },
   });
 
@@ -55,42 +56,94 @@ const LoginScreen = () => {
   };
 
   const onSubmit = (data) => {
+    setIsFetching(true);
+
     api
-      .post("/user/login", {
-        username: data.username,
-        password: data.password,
-        platform: Platform.OS,
+      .post("/user/activate", {
+        user: userId,
+        code: Number(data.code),
       })
       .then((res) => {
-        if (res.data.message === "User not found") {
-          return setApiError("Kullanıcı adı veya şifre yanlış");
-        }
+        setIsFetching(false);
+        setApiError(undefined);
 
-        if (res.data.message === "Credentials not matching our records") {
-          return setApiError("Kullanıcı adı veya şifre yanlış");
-        }
+        activate();
 
-        if (res.data.message === "Your account is not verified yet") {
-          return setApiError(
-            "Hesabınız henüz onaylanmamış mail adresinize gelen kod ile hesabınızı aktif edin."
-          );
-        }
-
-        if (res.data.message === "An error has been occurred") {
-          return setApiError("Bilinmeyen bir hata meydana geldi.");
-        }
-
-        if (res.data.message === "Sid token couldn't signed") {
-          return setApiError(
-            "Oturum oluşturulamadı tekrar giriş yapmayı deneyin."
-          );
-        }
-
-        console.log(res);
+        return navigateWithReset(navigation, "Main");
       })
       .catch((err) => {
-        console.log(err);
+        setIsFetching(false);
+        const response = JSON.parse(err.response.request._response);
+
+        switch (response.data) {
+          case "User not found":
+            return setApiError("Böyle bir kullanıcı bulunamadı");
+          case "Confirmation not found":
+            return setApiError(
+              "Kullanıcının onay kaydı bulunamadı. Hesap zaten onaylanmış olabilir"
+            );
+          case "You have to wait 1 minute":
+            return setApiError(
+              `Kod yeni gönderilmiş 1 dakika sonra tekrar dene`
+            );
+          case "Wrong code":
+            return setApiError("Kod doğrulanamadı");
+          case "Code expired":
+            return setApiError("Kodun süresi dolmuş");
+          case "An error has been occurred":
+            return setApiError("Bilinmeyen bir hata meydana geldi");
+          default:
+            break;
+        }
       });
+  };
+
+  const handleResendCode = () => {
+    api
+      .post("user/resend-confirmation", {
+        user: userId,
+      })
+      .then((res) => {
+        let time = 60;
+        setDidntReceiveCode(`Kod gönderildi (${time} saniye)`);
+
+        const interval = setInterval(() => {
+          setDidntReceiveCode(`Kod gönderildi (${time} saniye)`);
+
+          time--;
+
+          if (time === 0) {
+            setDidntReceiveCode("Kod almadım");
+            clearInterval(interval);
+          }
+        }, 1000);
+      })
+      .catch((err) => {
+        const response = JSON.parse(err.response.request._response);
+
+        switch (response.data) {
+          case "User not found":
+            return setApiError("Böyle bir kullanıcı bulunamadı");
+          case "Confirmation not found":
+            return setApiError(
+              "Onay kodu bulunamadı. Hesap zaten onaylanmış olabilir"
+            );
+          case "You have to wait":
+            return setApiError("Beklemelisin");
+          case "Code expired":
+            return setApiError("Kodun süresi dolmuş");
+          case "An error has been occurred":
+            return setApiError("Bilinmeyen bir hata meydana geldi");
+          default:
+            break;
+        }
+      });
+  };
+
+  const handleImNot = () => {
+    signOut();
+
+    navigateWithReset(navigation, "Register");
   };
 
   return (
@@ -102,16 +155,19 @@ const LoginScreen = () => {
 
       <View style={[styles.cardContainer, { height: height }]}>
         <View style={styles.header}>
-          <IconButton icon="arrow-back" callback={handleGoBack} size={24} />
+          {navigation.canGoBack() && (
+            <IconButton icon="arrow-back" callback={handleGoBack} size={24} />
+          )}
+          <View style={styles.blank} />
           <View style={styles.logo}>
             <Image style={styles.image} source={logo} />
           </View>
         </View>
 
         <View style={styles.cardHeader}>
-          <Text style={styles.title}>Giriş Yap</Text>
+          <Text style={styles.title}>Kaydınızı Tamamlayın</Text>
           <Text style={styles.text}>
-            Kitapseverlerin arasına katıl ve okumaya başla.
+            {email} adresinize gelen aktivasyon kodunu giriniz
           </Text>
         </View>
 
@@ -123,74 +179,15 @@ const LoginScreen = () => {
             rules={{
               required: {
                 value: true,
-                message: "Kullanıcı adı gerekli",
-              },
-              minLength: {
-                value: 6,
-                message: "6 karakterden az olamaz",
+                message: "Kod alanı gerekli",
               },
               maxLength: {
-                value: 32,
-                message: "32 karakterden fazla olamaz",
-              },
-              pattern: {
-                value: patterns.string,
-                message: "Kullanıcı adınız geçersiz karakterler içeriyor",
-              },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View
-                style={[sharedStyles.inputWithIconContainer, , styles.input]}
-              >
-                <Ionicons
-                  style={sharedStyles.inputWithIconIcon}
-                  name="person"
-                  size={16}
-                  color="gray"
-                />
-                <TextInput
-                  onBlur={onBlur}
-                  selectionColor="gray"
-                  onChangeText={(value) => onChange(value)}
-                  value={value}
-                  placeholder="Kullanıcı adı"
-                  style={sharedStyles.inputWithIcon}
-                />
-              </View>
-            )}
-            name="username"
-          />
-          {errors.username && (
-            <Text style={styles.fieldText}>{errors.username?.message}</Text>
-          )}
-
-          <Controller
-            control={control}
-            rules={{
-              required: {
-                value: true,
-                message: "Şifre alanı gerekli",
-              },
-              minLength: {
                 value: 6,
-                message: "Şifre en az 6 karakter olmalı",
-              },
-              maxLength: {
-                value: 255,
-                message: "Şifre en fazla 255 karakter olmalı",
+                message: "Kod en fazla 6 karakter olabilir",
               },
               validate: {
-                hasLowerLetter: (value) =>
-                  /[a-z]/.test(value) ||
-                  "Şifreniz en az bir küçük karakter içermelidir",
-                hasUpperLetter: (value) =>
-                  /[A-Z]/.test(value) ||
-                  "Şifreniz en az bir büyük karakter içermelidir",
                 hasNumber: (value) =>
-                  /[0-9]/.test(value) || "Şifreniz en az bir sayı içermelidir",
-                hasSpecialChar: (value) =>
-                  /[!@#$%^&*]/.test(value) ||
-                  "Şifreniz !@#$%^&* özel karakterlerinden en az birini içermelidir",
+                  Number(value) || "Kod sadece sayılardan oluşmalı",
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
@@ -208,49 +205,57 @@ const LoginScreen = () => {
                   selectionColor="gray"
                   onChangeText={(value) => onChange(value)}
                   style={sharedStyles.inputWithIcon}
-                  placeholder="Şifre"
+                  placeholder="Kod"
                   value={value}
-                  password={true}
+                  keyboardType={"number-pad"}
                 />
               </View>
             )}
-            name="password"
+            name="code"
           />
-          {errors.password && (
-            <Text style={styles.fieldText}>{errors.password?.message}</Text>
+          {errors.code && (
+            <Text style={styles.fieldText}>{errors.code?.message}</Text>
           )}
-
-          <CircleSnail size={30} color={["red", "green", "blue"]} />
 
           <PrimaryButton
             style={styles.button}
             callback={handleSubmit(onSubmit)}
           >
-            Giriş Yap
+            {isFetching ? (
+              <Circle
+                size={18}
+                endAngle={0.5}
+                color={"white"}
+                indeterminate={true}
+              />
+            ) : (
+              "Kodu Onayla"
+            )}
           </PrimaryButton>
           <View style={styles.takeRemaining} />
-          <TextButton
-            style={styles.textButton}
-            callback={() => handleNavigate("ForgotPassword")}
-          >
-            Şifreni mi unuttun?
-          </TextButton>
         </View>
 
-        <View style={styles.spacerContainer}>
-          <View style={styles.spacer} />
-          <Text style={styles.spacerText}>veya</Text>
-          <View style={styles.spacer} />
-        </View>
+        <TextButton
+          disabled={didntReceiveCode !== "Kod almadım"}
+          style={styles.textButton}
+          callback={handleResendCode}
+        >
+          <Text
+            style={
+              didntReceiveCode === "Kod almadım"
+                ? styles.didntReceiveCode
+                : styles.didntReceiveCodeDisabled
+            }
+          >
+            {didntReceiveCode}
+          </Text>
+        </TextButton>
 
         <View style={styles.takeRemaining} />
 
-        <OutlineButton
-          style={styles.whiteButton}
-          callback={() => handleNavigate("Register")}
-        >
-          Kayıt Ol
-        </OutlineButton>
+        <TextButton style={styles.whiteButton} callback={handleImNot}>
+          {email} değil misin?
+        </TextButton>
       </View>
     </View>
   );
@@ -287,7 +292,8 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingVertical: 48,
+    paddingTop: 48,
+    paddingBottom: 32,
   },
   header: {
     position: "relative",
@@ -297,6 +303,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  blank: {
+    width: "100%",
+    height: 48,
+  },
   logo: {
     position: "absolute",
     width: "100%",
@@ -304,12 +314,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   image: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     backgroundColor: "white",
     borderRadius: 8,
   },
   cardHeader: {
+    marginTop: 16,
     paddingBottom: 48,
     width: "85%",
     color: "white",
@@ -352,6 +363,17 @@ const styles = StyleSheet.create({
     width: "90%",
     margin: 8,
     marginBottom: 0,
+  },
+  didntReceiveCode: {
+    color: "#7972E6",
+  },
+  didntReceiveCodeDisabled: {
+    color: "#a6a6a6",
+  },
+  textButtonContent: {
+    color: "#7972E6",
+    fontWeight: "bold",
+    textAlign: "center",
   },
   whiteButton: {
     width: "90%",
@@ -397,4 +419,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default RegisterConfirmationScreen;

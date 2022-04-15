@@ -1,7 +1,7 @@
 import React from "react";
 import { TouchableHighlight, Text, StyleSheet } from "react-native";
 
-const TextButton = ({ children, callback, style }) => {
+const TextButton = ({ ref, disabled, children, callback, style }) => {
   const handlePress = () => {
     if (callback !== undefined) {
       callback();
@@ -10,6 +10,8 @@ const TextButton = ({ children, callback, style }) => {
 
   return (
     <TouchableHighlight
+      ref={ref}
+      disabled={disabled}
       underlayColor="transparent"
       onPress={handlePress}
       style={[styles.button, style]}

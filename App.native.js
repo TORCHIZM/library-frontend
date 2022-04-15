@@ -1,35 +1,43 @@
-import { useReducer, useEffect, useMemo } from "react";
-import { getItemAsync, setItemAsync } from "expo-secure-store";
+import { useReducer, useEffect, useMemo, useRef } from "react";
+import { deleteItemAsync, getItemAsync, setItemAsync } from "expo-secure-store";
 
-import { Platform, StyleSheet, LogBox, SafeAreaView } from "react-native";
+import { LogBox } from "react-native";
 
 import AuthContext from "./auth/AuthContext";
 
-import Landing from "./screens/Landing";
-import RegisterScreen from "./screens/auth/RegsiterScreen";
+import LandingScreen from "./screens/LandingScreen";
+import RegisterScreen from "./screens/auth/RegisterScreen";
+import RegisterConfirmationScreen from "./screens/auth/RegisterConfirmationScreen";
 import LoginScreen from "./screens/auth/LoginScreen";
+import MainScreen from "./screens/MainScreen";
+import PrivacyPolicyScreen from "./screens/about/PrivacyPolicyScreen";
+import UseOfTermsScreen from "./screens/about/UseOfTermsScreen";
+
 import { NavigationContainer } from "@react-navigation/native";
 
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { StatusBar } from "expo-status-bar";
+import { navigateWithReset } from "./helpers/navigationHelper";
+import LoadingScreen from "./screens/LoadingScreen";
 
 const App = () => {
   LogBox.ignoreLogs(["Overwriting fontFamily style attribute preprocessor"]);
-
+  const navigation = useRef(null);
   const Stack = createNativeStackNavigator();
 
   const [state, dispatch] = useReducer(
     (prevState, action) => {
       switch (action.type) {
-        case "RESTORE_TOKEN":
-          const updateTokenAsync = async (token) => {
-            await setItemAsync("userToken", token);
+        case "RESTORE_SESSION":
+          const updateSessionAsync = async (session) => {
+            await setItemAsync("session", session);
           };
 
-          updateTokenAsync(action.token);
+          updateSessionAsync(action.session);
 
           return {
             ...prevState,
-            userToken: action.token,
+            session: action.session,
             isLoading: false,
           };
         case "SIGN_IN":
@@ -40,11 +48,45 @@ const App = () => {
             session: action.session,
           };
         case "SIGN_OUT":
+          const deleteUserAndSessionAsync = async () => {
+            deleteItemAsync("user");
+            deleteItemAsync("session");
+          };
+
+          deleteUserAndSessionAsync();
+
           return {
             ...prevState,
             isSignout: true,
             user: action.user,
             session: action.session,
+          };
+        case "ACTIVATE":
+          const updateUserAsync = async (user) => {
+            const userAsString = JSON.stringify(user);
+            setItemAsync("user", userAsString);
+          };
+
+          const user = JSON.parse(prevState.user);
+
+          const newUser = {
+            _id: user._id,
+            active: true,
+            username: user.username,
+            password: user.password,
+            email: user.email,
+            fullName: user.fullName,
+            profileImage: user.profileImage,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          };
+
+          updateUserAsync(newUser);
+
+          return {
+            ...prevState,
+            user: newUser,
           };
         default:
           break;
@@ -64,22 +106,46 @@ const App = () => {
         dispatch({ type: "SIGN_IN", user: data.user, session: data.session });
       },
       signOut: () => dispatch({ type: "SIGN_OUT" }),
-      signUp: async (data) => {
-        dispatch({ type: "SIGN_UP", user: data.user, session: data.session });
-      },
+      activate: () => dispatch({ type: "ACTIVATE" }),
     }),
     []
   );
 
   useEffect(() => {
     const bootstrapAsync = async () => {
-      let userToken;
       try {
-        userToken = await getItemAsync("userToken");
-        console.log("token is: ", userToken);
-      } catch (e) {
-        console.log(e);
-      }
+        let session = await getItemAsync("session");
+        let user = await getItemAsync("user");
+
+        if (
+          session !== undefined &&
+          session !== null &&
+          user !== undefined &&
+          user !== null
+        ) {
+          authContext.signIn({
+            user: user,
+            session: session,
+          });
+
+          user = JSON.parse(user);
+          console.log(user.active);
+          if (!user.active) {
+            console.log("here");
+
+            console.log(user);
+
+            return navigation.current.navigate("RegisterConfirmation", {
+              userId: user._id,
+              email: user.email,
+            });
+          }
+
+          return navigateWithReset(navigation.current, "Main");
+        }
+
+        return navigateWithReset(navigation.current, "Landing");
+      } catch (e) {}
     };
 
     bootstrapAsync();
@@ -90,22 +156,54 @@ const App = () => {
   };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigation}>
+      <StatusBar barStyle="default" />
       <AuthContext.Provider value={authContext}>
         <Stack.Navigator>
           <Stack.Screen
-            name="Landing"
-            component={Landing}
+            name="Loading"
+            component={LoadingScreen}
             options={screenOptions}
           />
+
+          <Stack.Screen
+            name="Landing"
+            component={LandingScreen}
+            options={screenOptions}
+          />
+
           <Stack.Screen
             name="Login"
             component={LoginScreen}
             options={screenOptions}
           />
+
           <Stack.Screen
             name="Register"
             component={RegisterScreen}
+            options={screenOptions}
+          />
+
+          <Stack.Screen
+            name="RegisterConfirmation"
+            component={RegisterConfirmationScreen}
+            options={screenOptions}
+          />
+
+          <Stack.Screen
+            name="Main"
+            component={MainScreen}
+            options={screenOptions}
+          />
+
+          <Stack.Screen
+            name="PrivacyPolicy"
+            component={PrivacyPolicyScreen}
+            options={screenOptions}
+          />
+          <Stack.Screen
+            name="UseOfTerms"
+            component={UseOfTermsScreen}
             options={screenOptions}
           />
         </Stack.Navigator>

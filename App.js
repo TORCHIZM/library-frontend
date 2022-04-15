@@ -14,8 +14,8 @@ import AuthContext from "./auth/AuthContext";
 import { BrowserRouter } from "react-router-dom";
 import { Navigate, Routes, Route, Link } from "react-router-native";
 
-import Landing from "./screens/Landing";
-import RegisterScreen from "./screens/auth/RegsiterScreen";
+import LandingScren from "./screens/LandingScren";
+import RegisterScreen from "./screens/auth/RegisterScreen";
 import LoginScreen from "./screens/auth/LoginScreen";
 
 const App = () => {
@@ -108,7 +108,7 @@ const App = () => {
           </View>
 
           <Routes>
-            <Route exact path="/" element={<Landing />} />
+            <Route exact path="/" element={<LandingScren />} />
             <Route path="/login" element={<LoginScreen />} />
             <Route path="/register" element={<RegisterScreen />} />
             <Route path="*" element={<Navigate to="/" />} />

@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableHighlight, Text, StyleSheet } from "react-native";
+import { TouchableHighlight, Text, View, StyleSheet } from "react-native";
 
 const PrimaryButton = ({ children, callback, style }) => {
   const handlePress = () => {
@@ -8,13 +8,25 @@ const PrimaryButton = ({ children, callback, style }) => {
     }
   };
 
+  if (typeof children === "string") {
+    return (
+      <TouchableHighlight
+        underlayColor={"#7169FF"}
+        onPress={handlePress}
+        style={[styles.button, style]}
+      >
+        <Text style={styles.text}>{children}</Text>
+      </TouchableHighlight>
+    );
+  }
+
   return (
     <TouchableHighlight
       underlayColor={"#7169FF"}
       onPress={handlePress}
       style={[styles.button, style]}
     >
-      <Text style={styles.text}>{children}</Text>
+      <View>{children}</View>
     </TouchableHighlight>
   );
 };
