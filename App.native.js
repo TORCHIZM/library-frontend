@@ -19,6 +19,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { navigateWithReset } from "./helpers/navigationHelper";
 import LoadingScreen from "./screens/LoadingScreen";
+import ForgotPaswordScreen from "./screens/auth/ForgotPasswordScreen.native";
+import ForgotPasswordConfirmationScreen from "./screens/auth/ForgotPasswordConfirmationScreen.native";
 
 const App = () => {
   LogBox.ignoreLogs(["Overwriting fontFamily style attribute preprocessor"]);
@@ -129,12 +131,8 @@ const App = () => {
           });
 
           user = JSON.parse(user);
-          console.log(user.active);
+
           if (!user.active) {
-            console.log("here");
-
-            console.log(user);
-
             return navigation.current.navigate("RegisterConfirmation", {
               userId: user._id,
               email: user.email,
@@ -175,6 +173,18 @@ const App = () => {
           <Stack.Screen
             name="Login"
             component={LoginScreen}
+            options={screenOptions}
+          />
+
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPaswordScreen}
+            options={screenOptions}
+          />
+
+          <Stack.Screen
+            name="ForgotPasswordConfirmation"
+            component={ForgotPasswordConfirmationScreen}
             options={screenOptions}
           />
 

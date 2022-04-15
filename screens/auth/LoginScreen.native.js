@@ -152,9 +152,7 @@ const LoginScreen = () => {
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
-              <View
-                style={[sharedStyles.inputWithIconContainer, , styles.input]}
-              >
+              <View style={[sharedStyles.inputWithIconContainer, styles.input]}>
                 <Ionicons
                   style={sharedStyles.inputWithIconIcon}
                   name="person"
@@ -207,9 +205,7 @@ const LoginScreen = () => {
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
-              <View
-                style={[sharedStyles.inputWithIconContainer, , styles.input]}
-              >
+              <View style={[sharedStyles.inputWithIconContainer, styles.input]}>
                 <Ionicons
                   style={sharedStyles.inputWithIconIcon}
                   name="lock-closed"
@@ -248,7 +244,9 @@ const LoginScreen = () => {
               "Giriş Yap"
             )}
           </PrimaryButton>
+
           <View style={styles.takeRemaining} />
+
           <TextButton
             style={styles.textButton}
             callback={() => handleNavigate("ForgotPassword")}

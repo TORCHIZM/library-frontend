@@ -7,11 +7,13 @@ import {
   TextInput,
   Image,
   Dimensions,
+  Platform,
 } from "react-native";
 
 import { useNavigation } from "@react-navigation/native";
 
 import PrimaryButton from "../../components/PrimaryButton";
+import OutlineButton from "../../components/OutlineButton";
 import IconButton from "../../components/IconButton";
 import TextButton from "../../components/TextButton";
 
@@ -23,19 +25,18 @@ import Circle from "react-native-progress/Circle";
 
 import { Controller, useForm } from "react-hook-form";
 
+import patterns from "../../helpers/patterns";
 import AuthContext from "../../auth/AuthContext";
 import api from "../../helpers/api";
 import { navigateWithReset } from "../../helpers/navigationHelper";
+import { setItemAsync } from "expo-secure-store";
 
-const RegisterConfirmationScreen = ({ route }) => {
+const ForgotPaswordScreen = () => {
   const navigation = useNavigation();
-  const { userId, email } = route.params;
   const { height } = Dimensions.get("window");
-  const { activate, signOut } = useContext(AuthContext);
-
+  const { signIn } = useContext(AuthContext);
   const [apiError, setApiError] = useState(undefined);
   const [isFetching, setIsFetching] = useState(false);
-  const [didntReceiveCode, setDidntReceiveCode] = useState("Kod almadım");
 
   const {
     control,
@@ -43,7 +44,7 @@ const RegisterConfirmationScreen = ({ route }) => {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      code: "",
+      email: "",
     },
   });
 
@@ -51,21 +52,22 @@ const RegisterConfirmationScreen = ({ route }) => {
     navigation.goBack();
   };
 
+  const handleNavigate = (page) => {
+    navigation.navigate(page);
+  };
+
   const onSubmit = (data) => {
     setIsFetching(true);
 
     api
-      .post("/user/activate", {
-        user: userId,
-        code: Number(data.code),
+      .post("/user/forgot-password", {
+        email: data.email,
       })
       .then((res) => {
         setIsFetching(false);
         setApiError(undefined);
 
-        activate();
-
-        return navigateWithReset(navigation, "Main");
+        navigation.navigate("ForgotPasswordConfirmation");
       })
       .catch((err) => {
         setIsFetching(false);
@@ -73,73 +75,21 @@ const RegisterConfirmationScreen = ({ route }) => {
 
         switch (response.data) {
           case "User not found":
-            return setApiError("Böyle bir kullanıcı bulunamadı");
-          case "Confirmation not found":
+            return setApiError("Kullanıcı bulunamadı");
+          case "You have to wait 5 minute":
             return setApiError(
-              "Kullanıcının onay kaydı bulunamadı. Hesap zaten onaylanmış olabilir"
+              "Şifre yenileme kodu daha yeni gönderilmiş 5 dakika sonra tekrar deneyin"
             );
-          case "You have to wait 1 minute":
-            return setApiError(
-              `Kod yeni gönderilmiş 1 dakika sonra tekrar dene`
-            );
-          case "Wrong code":
-            return setApiError("Kod doğrulanamadı");
-          case "Code expired":
-            return setApiError("Kodun süresi dolmuş");
           case "An error has been occurred":
             return setApiError("Bilinmeyen bir hata meydana geldi");
+          case "Sid token couldn't signed":
+            return setApiError(
+              "Oturum oluşturulamadı tekrar giriş yapmayı deneyin"
+            );
           default:
             break;
         }
       });
-  };
-
-  const handleResendCode = () => {
-    api
-      .post("user/resend-confirmation", {
-        user: userId,
-      })
-      .then((res) => {
-        let time = 60;
-        setDidntReceiveCode(`Kod gönderildi (${time} saniye)`);
-
-        const interval = setInterval(() => {
-          setDidntReceiveCode(`Kod gönderildi (${time} saniye)`);
-
-          time--;
-
-          if (time === 0) {
-            setDidntReceiveCode("Kod almadım");
-            clearInterval(interval);
-          }
-        }, 1000);
-      })
-      .catch((err) => {
-        const response = JSON.parse(err.response.request._response);
-
-        switch (response.data) {
-          case "User not found":
-            return setApiError("Böyle bir kullanıcı bulunamadı");
-          case "Confirmation not found":
-            return setApiError(
-              "Onay kodu bulunamadı. Hesap zaten onaylanmış olabilir"
-            );
-          case "You have to wait":
-            return setApiError("Beklemelisin");
-          case "Code expired":
-            return setApiError("Kodun süresi dolmuş");
-          case "An error has been occurred":
-            return setApiError("Bilinmeyen bir hata meydana geldi");
-          default:
-            break;
-        }
-      });
-  };
-
-  const handleImNot = () => {
-    signOut();
-
-    navigateWithReset(navigation, "Register");
   };
 
   return (
@@ -151,19 +101,16 @@ const RegisterConfirmationScreen = ({ route }) => {
 
       <View style={[styles.cardContainer, { height: height }]}>
         <View style={styles.header}>
-          {navigation.canGoBack() && (
-            <IconButton icon="arrow-back" callback={handleGoBack} size={24} />
-          )}
-          <View style={styles.blank} />
+          <IconButton icon="arrow-back" callback={handleGoBack} size={24} />
           <View style={styles.logo}>
             <Image style={styles.image} source={logo} />
           </View>
         </View>
 
         <View style={styles.cardHeader}>
-          <Text style={styles.title}>Kaydınızı Tamamlayın</Text>
+          <Text style={styles.title}>Şifremi Unuttum</Text>
           <Text style={styles.text}>
-            {email} adresinize gelen aktivasyon kodunu giriniz
+            Şifre yenileme kodunuz için kayıt olduğunuz mail adresinizi girin
           </Text>
         </View>
 
@@ -175,22 +122,22 @@ const RegisterConfirmationScreen = ({ route }) => {
             rules={{
               required: {
                 value: true,
-                message: "Kod alanı gerekli",
+                message: "E-posta alanı gerekli",
               },
               maxLength: {
-                value: 6,
-                message: "Kod en fazla 6 karakter olabilir",
+                value: 255,
+                message: "E-posta en fazla 255 karakter olabilir",
               },
-              validate: {
-                isNumber: (value) =>
-                  Number(value) || "Kod sadece sayılardan oluşmalı",
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "Geçersiz e-posta adresi",
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
               <View style={[sharedStyles.inputWithIconContainer, styles.input]}>
                 <Ionicons
                   style={sharedStyles.inputWithIconIcon}
-                  name="lock-closed"
+                  name="mail"
                   size={16}
                   color="gray"
                 />
@@ -198,17 +145,17 @@ const RegisterConfirmationScreen = ({ route }) => {
                   onBlur={onBlur}
                   selectionColor="gray"
                   onChangeText={(value) => onChange(value)}
-                  style={sharedStyles.inputWithIcon}
-                  placeholder="Kod"
                   value={value}
-                  keyboardType={"number-pad"}
+                  placeholder="E-posta"
+                  style={sharedStyles.inputWithIcon}
+                  keyboardType={"email-address"}
                 />
               </View>
             )}
-            name="code"
+            name="email"
           />
-          {errors.code && (
-            <Text style={styles.fieldText}>{errors.code?.message}</Text>
+          {errors.email && (
+            <Text style={styles.fieldText}>{errors.email?.message}</Text>
           )}
 
           <PrimaryButton
@@ -223,33 +170,34 @@ const RegisterConfirmationScreen = ({ route }) => {
                 indeterminate={true}
               />
             ) : (
-              "Kodu Onayla"
+              "Kod Gönder"
             )}
           </PrimaryButton>
+
           <View style={styles.takeRemaining} />
+
+          <TextButton
+            style={styles.textButton}
+            callback={() => handleNavigate("ForgotPasswordConfirmation")}
+          >
+            Zaten kodun var mı?
+          </TextButton>
         </View>
 
-        <TextButton
-          disabled={didntReceiveCode !== "Kod almadım"}
-          style={styles.textButton}
-          callback={handleResendCode}
-        >
-          <Text
-            style={
-              didntReceiveCode === "Kod almadım"
-                ? styles.didntReceiveCode
-                : styles.didntReceiveCodeDisabled
-            }
-          >
-            {didntReceiveCode}
-          </Text>
-        </TextButton>
+        <View style={styles.spacerContainer}>
+          <View style={styles.spacer} />
+          <Text style={styles.spacerText}>veya</Text>
+          <View style={styles.spacer} />
+        </View>
 
         <View style={styles.takeRemaining} />
 
-        <TextButton style={styles.whiteButton} callback={handleImNot}>
-          {email} değil misin?
-        </TextButton>
+        <OutlineButton
+          style={styles.whiteButton}
+          callback={() => handleNavigate("Login")}
+        >
+          Giriş Yap
+        </OutlineButton>
       </View>
     </View>
   );
@@ -286,8 +234,7 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingTop: 48,
-    paddingBottom: 32,
+    paddingVertical: 48,
   },
   header: {
     position: "relative",
@@ -296,10 +243,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  blank: {
-    width: "100%",
-    height: 48,
   },
   logo: {
     position: "absolute",
@@ -314,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   cardHeader: {
-    marginTop: 16,
+    paddingTop: 16,
     paddingBottom: 48,
     width: "85%",
     color: "white",
@@ -357,17 +300,6 @@ const styles = StyleSheet.create({
     width: "90%",
     margin: 8,
     marginBottom: 0,
-  },
-  didntReceiveCode: {
-    color: "#7972E6",
-  },
-  didntReceiveCodeDisabled: {
-    color: "#a6a6a6",
-  },
-  textButtonContent: {
-    color: "#7972E6",
-    fontWeight: "bold",
-    textAlign: "center",
   },
   whiteButton: {
     width: "90%",
@@ -413,4 +345,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterConfirmationScreen;
+export default ForgotPaswordScreen;

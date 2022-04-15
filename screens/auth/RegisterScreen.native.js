@@ -21,7 +21,7 @@ import IconButton from "../../components/IconButton";
 import logo from "../../assets/icon-64.png";
 
 import { default as sharedStyles } from "../../styles/Shared";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Circle from "react-native-progress/Circle";
 
 import { Controller, useForm } from "react-hook-form";
@@ -53,6 +53,9 @@ const RegisterScreen = () => {
       password: "",
       rePassword: "",
       email: "",
+      dobYear: "",
+      dobMonth: "",
+      dobDay: "",
     },
   });
 
@@ -67,6 +70,11 @@ const RegisterScreen = () => {
   const onSubmit = (data) => {
     setIsFetching(true);
 
+    const day = data.dobDay.length === 1 ? `0${data.dobDay}` : data.dobDay;
+    const month =
+      data.dobMonth.length === 1 ? `0${data.dobMonth}` : data.dobMonth;
+    const dob = `${data.dobYear}-${month}-${day}T00:00:00Z`;
+
     api
       .post("/user/register", {
         username: data.username,
@@ -74,7 +82,7 @@ const RegisterScreen = () => {
         password: data.password,
         email: data.email,
         profileImage: image,
-        dateOfBirth: "2002-03-08T15:04:05Z",
+        dateOfBirth: dob,
         platform: Platform.OS,
       })
       .then((res) => {
@@ -164,7 +172,7 @@ const RegisterScreen = () => {
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  style={[sharedStyles.inputWithIconContainer, , styles.input]}
+                  style={[sharedStyles.inputWithIconContainer, styles.input]}
                 >
                   <Ionicons
                     style={sharedStyles.inputWithIconIcon}
@@ -210,7 +218,7 @@ const RegisterScreen = () => {
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  style={[sharedStyles.inputWithIconContainer, , styles.input]}
+                  style={[sharedStyles.inputWithIconContainer, styles.input]}
                 >
                   <Ionicons
                     style={sharedStyles.inputWithIconIcon}
@@ -252,7 +260,7 @@ const RegisterScreen = () => {
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  style={[sharedStyles.inputWithIconContainer, , styles.input]}
+                  style={[sharedStyles.inputWithIconContainer, styles.input]}
                 >
                   <Ionicons
                     style={sharedStyles.inputWithIconIcon}
@@ -308,7 +316,7 @@ const RegisterScreen = () => {
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  style={[sharedStyles.inputWithIconContainer, , styles.input]}
+                  style={[sharedStyles.inputWithIconContainer, styles.input]}
                 >
                   <Ionicons
                     style={sharedStyles.inputWithIconIcon}
@@ -367,7 +375,7 @@ const RegisterScreen = () => {
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  style={[sharedStyles.inputWithIconContainer, , styles.input]}
+                  style={[sharedStyles.inputWithIconContainer, styles.input]}
                 >
                   <Ionicons
                     style={sharedStyles.inputWithIconIcon}
@@ -390,6 +398,163 @@ const RegisterScreen = () => {
             />
             {errors.rePassword && (
               <Text style={styles.fieldText}>{errors.rePassword?.message}</Text>
+            )}
+            <View style={styles.birthdayContainer}>
+              <Controller
+                control={control}
+                rules={{
+                  required: {
+                    value: true,
+                    message: "Doğum günü gerekli",
+                  },
+                  maxLength: {
+                    value: 2,
+                    message: "En fazla 2 karakter olabilir",
+                  },
+                  min: {
+                    value: 1,
+                    message: "Doğum günü en az 1 olabilir",
+                  },
+                  max: {
+                    value: 31,
+                    message: "Doğum tarihi en fazla 31 olabilir",
+                  },
+                  validate: {
+                    isNumber: (value) =>
+                      Number(value) || "Doğum tarihi sayılardan oluşmalıdır",
+                  },
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <View
+                    style={[
+                      sharedStyles.inputWithIconContainer,
+                      styles.input,
+                      styles.birthdayInput,
+                    ]}
+                  >
+                    <MaterialIcons
+                      style={sharedStyles.inputWithIconIcon}
+                      name="cake"
+                      size={16}
+                      color="gray"
+                    />
+                    <TextInput
+                      onBlur={onBlur}
+                      selectionColor="gray"
+                      onChangeText={(value) => onChange(value)}
+                      style={sharedStyles.inputWithIcon}
+                      placeholder="Gün"
+                      value={value}
+                      keyboardType={"number-pad"}
+                    />
+                  </View>
+                )}
+                name="dobDay"
+              />
+              <Controller
+                control={control}
+                rules={{
+                  required: {
+                    value: true,
+                    message: "Doğum ayı gerekli",
+                  },
+                  maxLength: {
+                    value: 2,
+                    message: "En fazla 2 karakter olabilir",
+                  },
+                  max: {
+                    value: 12,
+                    message: "Doğum ayı en fazla 12 olabilir",
+                  },
+                  validate: {
+                    isNumber: (value) =>
+                      Number(value) || "Doğum tarihi sayılardan oluşmalıdır",
+                    isValid: (value) => {
+                      const date = new Date();
+
+                      const checkYear =
+                        date.getFullYear() <= Number(getValues("dobYear"));
+
+                      if (checkYear) {
+                        const valid = date.getMonth() >= Number(value);
+                        return valid ? true : "Geçerli bir doğum ayı giriniz";
+                      }
+                    },
+                  },
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <View
+                    style={[
+                      sharedStyles.inputWithIconContainer,
+                      styles.input,
+                      styles.birthdayInput,
+                    ]}
+                  >
+                    <TextInput
+                      onBlur={onBlur}
+                      selectionColor="gray"
+                      onChangeText={(value) => onChange(value)}
+                      value={value}
+                      placeholder="Ay"
+                      keyboardType={"number-pad"}
+                    />
+                  </View>
+                )}
+                name="dobMonth"
+              />
+              <Controller
+                control={control}
+                rules={{
+                  required: {
+                    value: true,
+                    message: "Doğum yılı gerekli",
+                  },
+                  maxLength: {
+                    value: 4,
+                    message: "Doğum yılı en fazla 4 karakter olabilir",
+                  },
+                  min: {
+                    value: 1940,
+                    message: "Doğum yılı en az 1940 olabilir",
+                  },
+                  max: {
+                    value: new Date().getFullYear(),
+                    message: `Doğum yılı en fazla ${new Date().getFullYear()} olabilir`,
+                  },
+                  validate: {
+                    isNumber: (value) =>
+                      Number(value) || "Doğum yılı sayılardan oluşmalıdır",
+                  },
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <View
+                    style={[
+                      sharedStyles.inputWithIconContainer,
+                      styles.input,
+                      styles.birthdayInput,
+                    ]}
+                  >
+                    <TextInput
+                      onBlur={onBlur}
+                      selectionColor="gray"
+                      onChangeText={(value) => onChange(value)}
+                      value={value}
+                      placeholder="Yıl"
+                      keyboardType={"number-pad"}
+                    />
+                  </View>
+                )}
+                name="dobYear"
+              />
+            </View>
+            {errors.dobDay && (
+              <Text style={styles.fieldText}>{errors.dobDay?.message}</Text>
+            )}
+            {errors.dobMonth && (
+              <Text style={styles.fieldText}>{errors.dobMonth?.message}</Text>
+            )}
+            {errors.dobYear && (
+              <Text style={styles.fieldText}>{errors.dobYear?.message}</Text>
             )}
 
             <PrimaryButton
@@ -504,6 +669,14 @@ const styles = StyleSheet.create({
     textAlign: "left",
     alignItems: "flex-start",
     justifyContent: "space-between",
+  },
+  birthdayContainer: {
+    flexDirection: "row",
+    width: "92%",
+    margin: 4,
+  },
+  birthdayInput: {
+    flex: 1,
   },
   card: {
     width: "100%",
