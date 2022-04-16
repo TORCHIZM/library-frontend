@@ -63,7 +63,7 @@ const ForgotPasswordConfirmationScreen = ({ route }) => {
         setIsFetching(false);
         setApiError(undefined);
 
-        return navigateWithReset(navigation, "Main");
+        return navigateWithReset(navigation, "Login");
       })
       .catch((err) => {
         setIsFetching(false);
@@ -78,6 +78,8 @@ const ForgotPasswordConfirmationScreen = ({ route }) => {
             return setApiError("Kod doğrulanamadı");
           case "Code expired":
             return setApiError("Kodun süresi dolmuş");
+          case "Your password cannot be the same as the old password":
+            return setApiError("Şifreniz eski şifrenizle aynı olamaz");
           case "An error has been occurred":
             return setApiError("Bilinmeyen bir hata meydana geldi");
           default:

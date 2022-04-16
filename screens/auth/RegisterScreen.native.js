@@ -275,6 +275,7 @@ const RegisterScreen = () => {
                     value={value}
                     placeholder="E-posta"
                     style={sharedStyles.inputWithIcon}
+                    keyboardType={"email-address"}
                   />
                 </View>
               )}
