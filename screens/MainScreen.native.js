@@ -1,27 +1,28 @@
 import { useContext } from "react";
-import { Button, View, Text } from "react-native";
 
-import { useNavigation } from "@react-navigation/native";
+import { NavigationContainer, useNavigation } from "@react-navigation/native";
 
 import AuthContext from "../auth/AuthContext";
-import { navigateWithReset } from "../helpers/navigationHelper";
+
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import Tabs from "../components/Tabs";
+
+const Tab = createBottomTabNavigator();
 
 const MainScreen = () => {
-  const navigation = useNavigation();
   const { signOut } = useContext(AuthContext);
+  const navigation = useNavigation();
 
   const handleSignOut = () => {
+    console.log(signOut);
     signOut();
-    navigateWithReset(navigation, "Landing");
+    navigation.navigate("Landing");
   };
 
   return (
-    <View>
-      <Text>Giriş başarılı</Text>
-      <Button onPress={handleSignOut} title="Çıkış Yap">
-        Çıkış yap
-      </Button>
-    </View>
+    <NavigationContainer independent={true}>
+      <Tabs />
+    </NavigationContainer>
   );
 };
 
