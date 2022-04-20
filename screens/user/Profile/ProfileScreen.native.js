@@ -15,17 +15,17 @@ import { NavigationContainer } from "@react-navigation/native";
 import TopBar from "./TopBar";
 
 const ProfileScreen = () => {
-  // let [fontsLoaded] = useFonts({
-  //   Poppins_100Thin,
-  //   Poppins_300Light,
-  //   Poppins_400Regular,
-  //   Poppins_600SemiBold,
-  //   Poppins_700Bold,
-  // });
+  let [fontsLoaded] = useFonts({
+    Poppins_100Thin,
+    Poppins_300Light,
+    Poppins_400Regular,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
 
-  // if (!fontsLoaded) {
-  //   return <LoadingScreen />;
-  // }
+  if (!fontsLoaded) {
+    return <LoadingScreen />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
