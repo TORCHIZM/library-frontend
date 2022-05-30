@@ -1,6 +1,17 @@
-import { Text, StyleSheet, View, Image, ScrollView } from "react-native";
+import { useEffect, useState, useContext } from "react";
+
+import {
+  Text,
+  StyleSheet,
+  View,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import Icon, { Icons } from "../../../components/Icon";
+
 import {
   Poppins_100Thin,
   Poppins_300Light,
@@ -13,8 +24,22 @@ import {
 import LoadingScreen from "../../LoadingScreen";
 import { NavigationContainer } from "@react-navigation/native";
 import TopBar from "./TopBar";
+import AuthContext from "../../../auth/AuthContext";
+import { getItemAsync } from "expo-secure-store";
 
 const ProfileScreen = () => {
+  const { signOut } = useContext(AuthContext);
+  const [username, setUsername] = useState("");
+  const [profileImage, setProfileImage] = useState("");
+
+  useEffect(async () => {
+    let user = await getItemAsync("user");
+    user = JSON.parse(user);
+    console.log(user);
+    setUsername(user.username);
+    setProfileImage(user.profileImage);
+  }, []);
+
   let [fontsLoaded] = useFonts({
     Poppins_100Thin,
     Poppins_300Light,
@@ -27,12 +52,18 @@ const ProfileScreen = () => {
     return <LoadingScreen />;
   }
 
+  const handleLogOut = () => {
+    signOut();
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.headerContainer}>
         <View style={styles.header}>
-          <Text style={styles.username}>@torchizm</Text>
-          <Icon type={Icons.FontAwesome} name={"cog"} size={24} />
+          <Text style={styles.username}>@{username}</Text>
+          <TouchableOpacity onPress={handleLogOut}>
+            <Icon type={Icons.FontAwesome} name={"cog"} size={24} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -40,11 +71,11 @@ const ProfileScreen = () => {
         style={styles.scrollview}
         contentContainerStyle={styles.scrollContentContainer}
       >
-        <View style={[styles.header, styles.userfields]}>
+        <View style={[styles.padding, styles.header, styles.userfields]}>
           <Image
             style={styles.profileImage}
             source={{
-              uri: "https://pbs.twimg.com/profile_images/1461417562814697478/H8Nvvg4a_200x200.jpg",
+              uri: profileImage,
             }}
           />
           <View style={styles.fieldContainer}>
@@ -53,24 +84,28 @@ const ProfileScreen = () => {
               <Text style={styles.fieldText}>Okunan Kitap</Text>
             </View>
             <View style={styles.field}>
-              <Text style={styles.fieldTitle}>300</Text>
+              <Text style={styles.fieldTitle}>100M</Text>
               <Text style={styles.fieldText}>Takipçi</Text>
             </View>
             <View style={styles.field}>
-              <Text style={styles.fieldTitle}>250</Text>
+              <Text style={styles.fieldTitle}>0</Text>
               <Text style={styles.fieldText}>Takip Edilen</Text>
             </View>
           </View>
         </View>
-        <TopBar />
+        <NavigationContainer independent={true}>
+          <TopBar />
+        </NavigationContainer>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: "100%",
+    height: "100%",
     flexDirection: "column",
     alignItems: "flex-start",
   },
@@ -80,9 +115,10 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   scrollContentContainer: {
-    padding: 16,
     paddingTop: 0,
-    paddingBottom: 100,
+    flex: 1,
+    width: "100%",
+    height: "100%",
   },
   headerContainer: {
     padding: 16,
@@ -123,6 +159,9 @@ const styles = StyleSheet.create({
   },
   fieldText: {
     fontSize: 14,
+  },
+  padding: {
+    paddingHorizontal: 16,
   },
 });
 

@@ -27,7 +27,7 @@ const Landing = () => {
           <Text style={styles.title}>Hoşgeldiniz!</Text>
 
           <Text style={styles.text}>
-            Kitap kurtlarıyla sosyalleşebileceğiniz tek sanal ortam
+            Kitap kürtleriyle sosyalleşebileceğiniz tek sanal ortam
           </Text>
 
           <PrimaryButton

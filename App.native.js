@@ -21,6 +21,7 @@ import { navigateWithReset } from "./helpers/navigationHelper";
 import LoadingScreen from "./screens/LoadingScreen";
 import ForgotPaswordScreen from "./screens/auth/ForgotPasswordScreen";
 import ForgotPasswordConfirmationScreen from "./screens/auth/ForgotPasswordConfirmationScreen";
+import api from "./helpers/api";
 
 const App = () => {
   LogBox.ignoreLogs(["Overwriting fontFamily style attribute preprocessor"]);
@@ -32,7 +33,7 @@ const App = () => {
       switch (action.type) {
         case "RESTORE_SESSION":
           const updateSessionAsync = async (session) => {
-            await setItemAsync("session", session);
+            await setItemAsync("session", session.sid);
           };
 
           updateSessionAsync(action.session);
@@ -50,12 +51,15 @@ const App = () => {
             session: action.session,
           };
         case "SIGN_OUT":
+          api.defaults.headers.common["Authorization"] = null;
+
           const deleteUserAndSessionAsync = async () => {
             deleteItemAsync("user");
             deleteItemAsync("session");
           };
 
           deleteUserAndSessionAsync();
+          navigateWithReset(navigation.current, "Landing");
 
           return {
             ...prevState,
@@ -69,6 +73,7 @@ const App = () => {
             setItemAsync("user", userAsString);
           };
 
+          console.log("prev state", prevState.user);
           const user = JSON.parse(prevState.user);
 
           const newUser = {
@@ -90,6 +95,12 @@ const App = () => {
             ...prevState,
             user: newUser,
           };
+        case "TEST":
+          console.log(prevState);
+
+          return {
+            ...prevState,
+          };
         default:
           break;
       }
@@ -105,16 +116,22 @@ const App = () => {
   const authContext = useMemo(
     () => ({
       signIn: async (data) => {
+        api.defaults.headers.common["Authorization"] = `Bearer ${
+          JSON.parse(data.session).sid
+        }`;
         dispatch({ type: "SIGN_IN", user: data.user, session: data.session });
       },
       signOut: () => dispatch({ type: "SIGN_OUT" }),
       activate: () => dispatch({ type: "ACTIVATE" }),
+      test: () => dispatch({ type: "TEST" }),
     }),
     []
   );
 
   useEffect(() => {
     const bootstrapAsync = async () => {
+      api.defaults.headers.common["Platform"] = Platform.OS.toLowerCase();
+
       try {
         let session = await getItemAsync("session");
         let user = await getItemAsync("user");
@@ -139,9 +156,13 @@ const App = () => {
             });
           }
 
+          authContext.test();
           return navigateWithReset(navigation.current, "Main");
         }
-
+        // return navigateWithReset(navigation.current, "RegisterConfirmation", {
+        //   id: "62950ddeb94d288a74222f40",
+        //   email: "senaristpalyaco@gmail.com",
+        // });
         return navigateWithReset(navigation.current, "Landing");
       } catch (e) {}
     };

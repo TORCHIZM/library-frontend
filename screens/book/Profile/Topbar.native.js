@@ -1,22 +1,22 @@
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { StyleSheet } from "react-native";
-import BooksScreen from "./BooksScreen.native";
-import QuatationScreen from "./QuotationScreen.native";
+import AboutScreen from "./AboutScreen";
+import QuotationScreen from "./QuotationScreen";
 
 const Tab = createMaterialTopTabNavigator();
 
 const Tabs = [
   {
-    name: "3 Okunan",
-    component: BooksScreen,
+    name: "Hakkında",
+    component: AboutScreen,
   },
   {
     name: "Alıntılar",
-    component: QuatationScreen,
+    component: QuotationScreen,
   },
 ];
 
-const TopBar = () => {
+const TopBar = (props) => {
   return (
     <Tab.Navigator
       style={styles.navigator}
@@ -39,6 +39,7 @@ const TopBar = () => {
             key="topbarScreen"
             name={tab.name}
             component={tab.component}
+            initialParams={props}
           />
         );
       })}

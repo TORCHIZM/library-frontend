@@ -85,7 +85,7 @@ const RegisterScreen = () => {
         dateOfBirth: dob,
         platform: Platform.OS,
       })
-      .then((res) => {
+      .then(async (res) => {
         setIsFetching(false);
         setApiError(undefined);
 
@@ -94,11 +94,12 @@ const RegisterScreen = () => {
           session: res.data.data.session,
         });
 
+        console.log(res.data.data);
         const user = JSON.stringify(res.data.data.user);
         const session = JSON.stringify(res.data.data.session);
 
-        setItemAsync("user", user);
-        setItemAsync("session", session);
+        await setItemAsync("user", user);
+        await setItemAsync("session", session);
 
         return navigateWithReset(navigation, "RegisterConfirmation", {
           userId: res.data.data.user._id,

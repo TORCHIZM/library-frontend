@@ -1,6 +1,6 @@
 import { TouchableHighlight, StyleSheet, Text } from "react-native";
 
-const OutlineButton = ({ children, callback, style }) => {
+const OutlineButton = ({ children, callback, style, textColor }) => {
   const handlePress = () => {
     if (callback !== undefined) {
       callback();
@@ -13,7 +13,14 @@ const OutlineButton = ({ children, callback, style }) => {
       onPress={handlePress}
       style={[styles.button, style]}
     >
-      <Text style={styles.text}>{children}</Text>
+      <Text
+        style={[
+          styles.text,
+          textColor === undefined ? styles.textColor : { color: textColor },
+        ]}
+      >
+        {children}
+      </Text>
     </TouchableHighlight>
   );
 };
@@ -32,6 +39,9 @@ const styles = StyleSheet.create({
     color: "#7972EA",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  textColor: {
+    color: "#7972EA",
   },
 });
 

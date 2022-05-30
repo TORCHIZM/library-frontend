@@ -1,6 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import React from "react";
-import { useContext } from "react";
+import React, { useContext } from "react";
 import { Button, View } from "react-native";
 import { navigateWithReset } from "../helpers/navigationHelper";
 
@@ -15,7 +14,7 @@ const MainScreen = () => {
 
   return (
     <View>
-      Main.native
+      <Text>Main.native</Text>
       <Button onPress={handleSignOut}>Çıkış yap</Button>
     </View>
   );
